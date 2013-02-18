@@ -43,9 +43,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 /**
  * TODO: Sicherheitsabfrage vor Neustart
- * TODO: Auto Reload nach Neustart z.B. nach 1 Minute 
  * TODO: bessere Neustartmethode; evt. nur Apache neustarten.
  * TODO: Zugriffsbeschränkung für Fernzugriff insbesondere für System-Neustart
+ * TODO: automatisiert Contao aus einer Kopiervorlage erzeugen
+ * TODO: automatisch localconfig löschen ??? 
  * 
  */
 ////////////////////////////////////////////////////////////////////////////////
@@ -231,7 +232,8 @@ switch ($ACT) {
         $hdn->showHttpdVhosts();
         break;
     case 2:
-        echo '<meta http-equiv="refresh" content="50; url=http://'.$hdn->getHost().'">';
+        $hdn->saveHttpdVhosts();
+        echo '<meta http-equiv="refresh" content="90; url=http://'.$hdn->getHost().'">';
         echo '<h1>htdocs-Navi</h1>';
         echo '<br>versuche Server neu zu starten...';
         $res = $hdn->RestartWindows();
@@ -241,7 +243,7 @@ switch ($ACT) {
             echo '<hr>' . $hdn->getHostLink();
         } else {
             echo '<br>Starte neu... ';
-            echo '<br>Bitte 1 Minute warten... ';
+            echo '<br>Bitte 2 Minuten warten... ';
             echo '<hr>' ;
         }        
         break;

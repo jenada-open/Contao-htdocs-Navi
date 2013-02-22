@@ -43,10 +43,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 /**
  * TODO: Sicherheitsabfrage vor Neustart
+ * TODO: Auto Reload nach Neustart z.B. nach 1 Minute 
  * TODO: bessere Neustartmethode; evt. nur Apache neustarten.
  * TODO: Zugriffsbeschränkung für Fernzugriff insbesondere für System-Neustart
- * TODO: automatisiert Contao aus einer Kopiervorlage erzeugen
- * TODO: automatisch localconfig löschen ??? 
  * 
  */
 ////////////////////////////////////////////////////////////////////////////////
@@ -155,13 +154,13 @@ class htdocsNavi {
      */
     public function getHttpdVhosts() {
         $htm = 'NameVirtualHost *:80' . EOL;
+        $htm.=EOL;
+        $htm.='<VirtualHost *:80>' . EOL;
+        $htm.='    DocumentRoot "' . $this->XamppDocumentRoot . '"' . EOL;
+        $htm.='    ServerName ' . $this->Domain . EOL;
+        $htm.='    ServerAlias ' . $this->Domain . EOL;
+        $htm.='</VirtualHost>' . EOL;
         foreach ($this->getFolders() as $val) {
-            $htm.=EOL;
-            $htm.='<VirtualHost *:80>' . EOL;
-            $htm.='    DocumentRoot "' . $this->XamppDocumentRoot . '"' . EOL;
-            $htm.='    ServerName ' . $this->Domain . EOL;
-            $htm.='    ServerAlias ' . $this->Domain . EOL;
-            $htm.='</VirtualHost>' . EOL;
             $htm.=EOL;
             if ($this->getInfoText($this->Dir . $val) <> '') {
                 $htm.='##' . EOL;
@@ -208,7 +207,7 @@ class htdocsNavi {
 
     public function RestartWindows() {
         $cmd = 'shutdown -r -t 1';
-        $res = shell_exec($cmd); 
+        $res = shell_exec($cmd);
         return trim($res);
     }
 
@@ -233,7 +232,7 @@ switch ($ACT) {
         break;
     case 2:
         $hdn->saveHttpdVhosts();
-        echo '<meta http-equiv="refresh" content="90; url=http://'.$hdn->getHost().'">';
+        echo '<meta http-equiv="refresh" content="90; url=http://' . $hdn->getHost() . '">';
         echo '<h1>htdocs-Navi</h1>';
         echo '<br>versuche Server neu zu starten...';
         $res = $hdn->RestartWindows();
@@ -244,8 +243,8 @@ switch ($ACT) {
         } else {
             echo '<br>Starte neu... ';
             echo '<br>Bitte 2 Minuten warten... ';
-            echo '<hr>' ;
-        }        
+            echo '<hr>';
+        }
         break;
 }
 ?>

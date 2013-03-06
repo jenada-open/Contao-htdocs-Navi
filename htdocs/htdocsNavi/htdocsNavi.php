@@ -13,14 +13,21 @@
  * Test.de:83 landet auf 192.168.112.83 Port 80
  * Test.de:84 landet auf 192.168.112.84 Port 80
  * usw...
+ * 
  * je VM gibt es mehrere Contao Installationen unter htdocs
  * Beispiel:
  * htdocs/cto1
  * htdocs/cto2
  * htdocs/cto3
  * usw...
+ * 
  * im jeweiligen Contao Root kann eine info.txt gespeichert werden.
- * Dort kommt ein Einzeiler als Kurzbeschreibung rein.
+ * NEU: die info.txt ist nun eine Config-Datei für Multidomainbetrieb. 
+ * Aufbau:
+ * sub1=BeschreibungSubdomain1
+ * sub2=BeschreibungSubdomain2
+ * sub3=BeschreibungSubdomain3
+ * usw...
  * 
  * Das Script selbst soll aufgerufen werden, wenn man htdocs-root aufruft
  * Dann erhält man eine Übersicht der bestehenden Installtionen mit je 
@@ -43,7 +50,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 /**
  * TODO: Sicherheitsabfrage vor Neustart
- * TODO: Auto Reload nach Neustart z.B. nach 1 Minute 
  * TODO: bessere Neustartmethode; evt. nur Apache neustarten.
  * TODO: Zugriffsbeschränkung für Fernzugriff insbesondere für System-Neustart
  * 
@@ -126,6 +132,34 @@ class htdocsNavi {
     }
 
     /**
+     * Schlüssel-Werte Paare aus Info Text extrahieren
+     * info.txt 
+     * 
+     * @param String $Folder
+     * @return array
+     */
+    private function getInfoConfig($Folder) {
+        $filename = $Folder . '/info.txt';
+        if (!file_exists($filename))
+            return array();
+        $lines = file($filename);
+        if (!is_array($lines))
+            return array();
+        $resarr = NULL;
+        foreach ($lines as $line) {
+            $p = StriPos($line, '=');
+            $key = SubStr($line, 0, $p);
+            $val = SubStr($line, $p + 1);
+            if ($key <> '' and $val <> '') {
+                $resarr[$key . '.'] = trim($val);
+            } else {
+                $resarr[''] = trim($line);
+            }
+        }
+        return $resarr;
+    }
+
+    /**
      * Aufbau der Linkliste als Tabelle
      * 
      * @return string 
@@ -133,13 +167,15 @@ class htdocsNavi {
     public function getLinkList() {
         $htm = '<table >';
         foreach ($this->getFolders() as $val) {
+            $subdom = $this->getInfoConfig($this->Dir . $val);
+            foreach ($subdom as $k => $v) {
             $htm.='<tr style="background-color: #c0c0c0;">';
-            $htm.='<td>' . $val . '.' . $this->Host . '</td>';
-            $htm.='<td>&nbsp;<a href="http://' . $val . '.' . $this->Host . '/contao/index.php" target="_blank">Admin</a>&nbsp;</td>';
-            $htm.='<td>&nbsp;<a href="http://' . $val . '.' . $this->Host . '/" target="_blank">Show</a>&nbsp;</td>';
-            $htm.='<td>' . $this->getInfoText($this->Dir . $val) . '</td>';
+            $htm.='<td>' . $k. $val . '.' . $this->Host . '</td>';
+            $htm.='<td>&nbsp;<a href="http://' . $k . $val . '.' . $this->Host . '/contao/index.php" target="_blank">Admin</a>&nbsp;</td>';
+            $htm.='<td>&nbsp;<a href="http://' . $k . $val . '.' . $this->Host . '/" target="_blank">Show</a>&nbsp;</td>';
+            $htm.='<td>' . $v . '</td>';
             $htm.='</tr>';
-        }
+        }}
         $htm.='</table>';
         return $htm;
     }
@@ -161,17 +197,21 @@ class htdocsNavi {
         $htm.='    ServerAlias ' . $this->Domain . EOL;
         $htm.='</VirtualHost>' . EOL;
         foreach ($this->getFolders() as $val) {
-            $htm.=EOL;
-            if ($this->getInfoText($this->Dir . $val) <> '') {
+            $subdom = $this->getInfoConfig($this->Dir . $val);
+            foreach ($subdom as $k => $v) {
+                $htm.=EOL;
+//            if ($v <> '') {
                 $htm.='##' . EOL;
-                $htm.='# ' . $this->getInfoText($this->Dir . $val) . EOL;
+                //$htm.='# ' . $k . EOL;
+                $htm.='# ' . $v . EOL;
                 $htm.='##' . EOL;
+//            }
+                $htm.='<VirtualHost *:80>' . EOL;
+                $htm.='    DocumentRoot "' . $this->XamppDocumentRoot . $val . '"' . EOL;
+                $htm.='    ServerName ' . $k . $val . '.' . $this->Domain . EOL;
+                $htm.='    ServerAlias ' . $k . $val . '.' . $this->Domain . EOL;
+                $htm.='</VirtualHost>' . EOL;
             }
-            $htm.='<VirtualHost *:80>' . EOL;
-            $htm.='    DocumentRoot "' . $this->XamppDocumentRoot . $val . '"' . EOL;
-            $htm.='    ServerName ' . $val . '.' . $this->Domain . EOL;
-            $htm.='    ServerAlias ' . $val . '.' . $this->Domain . EOL;
-            $htm.='</VirtualHost>' . EOL;
         }
         return $htm;
     }
